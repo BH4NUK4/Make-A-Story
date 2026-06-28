@@ -1,0 +1,69 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# =========================
+# Python / FastAPI
+# =========================
+backend/.venv/
+backend/venv/
+backend/__pycache__/
+backend/**/*.pyc
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/.ruff_cache/
+
+# Environment variables
+backend/.env
+backend/.env.*
+
+# Database
+backend/*.db
+backend/*.sqlite3
+
+# Logs
+backend/*.log
+
+# =========================
+# React / Node
+# =========================
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+
+# Environment variables
+frontend/.env
+frontend/.env.*
+
+# Logs
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/pnpm-debug.log*
+
+# =========================
+# VS Code
+# =========================
+.vscode/
+
+# (Optional) Keep shared workspace settings
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# =========================
+# OS Files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# GitHub
+# =========================
+*.swp
+*.swo
