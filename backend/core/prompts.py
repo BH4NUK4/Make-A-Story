@@ -14,6 +14,7 @@ STORY_PROMPT = """
                 - The story should be 6-7 levels deep (including root node)
                 - Add variety in the path lengths (some end earlier, some later)
                 - Make sure there's at least one winning path
+                -dont use very complexer english , 
 
                 Output your story in this exact JSON structure:
                 {format_instructions}

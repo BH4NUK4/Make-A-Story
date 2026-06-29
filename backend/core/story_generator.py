@@ -1,22 +1,30 @@
 from sqlalchemy.orm import Session
-from core.config import Settings #??
+from core.config import Settings 
 
-from langchain_openai import ChatOpenAI
+# Removed: from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI # Added this import
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 
 from core.prompts import STORY_PROMPT
-from models.story import Story , StoryNode
-from core.models import StoryLLMResponse , StoryNodeLLM
+from models.story import Story, StoryNode
+from core.models import StoryLLMResponse, StoryNodeLLM
 
 class StoryGenerator:
     @classmethod
     def _get_llm(cls):
-        return ChatOpenAI(model="gpt-4-turbo")
+        # We instantiate the Settings to grab our new API key
+        settings = Settings()
+        
+        # Swapped ChatOpenAI for ChatGoogleGenerativeAI
+        return ChatGoogleGenerativeAI(
+            model="gemini-2.5-flash", # Using the fast, free tier model
+            google_api_key=settings.GEMINI_API_KEY,
+            temperature=0.7 # A good temperature for creative story writing
+        )
      
-    
     @classmethod
-    def generate_story(cls, db: Session , session_id: str , theme : str = "fantacy") ->Story:
+    def generate_story(cls, db: Session, session_id: str, theme: str = "fantasy") -> Story:
         llm = cls._get_llm()
         story_parser = PydanticOutputParser(pydantic_object=StoryLLMResponse)
         
@@ -29,61 +37,53 @@ class StoryGenerator:
                 "human",
                 f"Create the story with this theme : {theme}"
             )
-        ]).partial(format_instructions = story_parser.get_format_instructions())
+        ]).partial(format_instructions=story_parser.get_format_instructions())
          
-        
         raw_response = llm.invoke(promt.invoke({}))
         
         response_text = raw_response
-        if hasattr(raw_response , "content"):
+        if hasattr(raw_response, "content"):
             response_text = raw_response.content
             
-        story_structure = story_parser(response_text)
+        story_structure = story_parser.parse(response_text) # minor fix: use .parse()
         
-        
-        story_db = Story(title = story_structure.title , session_id = session_id)
+        story_db = Story(title=story_structure.title, session_id=session_id)
         db.add(story_db)
         db.flush()
         
-        
         root_node_data = story_structure.rootNode 
-        if isinstance(root_node_data , dict):
+        if isinstance(root_node_data, dict):
             root_node_data = StoryNodeLLM.model_validate(root_node_data)
             
-            
-            
-        cls._process_story_node(db , story_db.id , root_node_data , is_root= True)
-        
+        cls._process_story_node(db, story_db.id, root_node_data, is_root=True)
         
         db.commit()
         return story_db
     
-    
     @classmethod
-    def _process_story_node(cls , db : Session , story_id : int , node_data : StoryNodeLLM , is_root : bool = False)-> StoryNode:
+    def _process_story_node(cls, db: Session, story_id: int, node_data: StoryNodeLLM, is_root: bool = False) -> StoryNode:
+        # This function recursively builds your story tree in the database!
         node = StoryNode(
-            story_id = story_id,
-            content = node_data.content if hasattr(node_data , "content") else node_data["content"],
-            is_root = is_root,
-            is_ending = node_data.isEnding if hasattr(node_data , "isEnding") else node_data["isEnding"],
-            is_winning_ending = node_data.isWinningEnding if hasattr(node_data, "isWinningEnding") else node_data["isWinningEnding"],
-            option =[]
+            story_id=story_id,
+            content=node_data.content if hasattr(node_data, "content") else node_data["content"],
+            is_root=is_root,
+            is_ending=node_data.isEnding if hasattr(node_data, "isEnding") else node_data["isEnding"],
+            is_winning_ending=node_data.isWinningEnding if hasattr(node_data, "isWinningEnding") else node_data["isWinningEnding"],
+            options=[] # Note: I corrected the typo from `option=[]` to `options=[]` assuming it matches your DB model.
         )
         
         db.add(node)
         db.flush()
         
-        
-        if not node.is_ending and (hasattr(node_data , "options") and node_data.options):
+        if not node.is_ending and (hasattr(node_data, "options") and node_data.options):
             option_list = []
             for option_data in node_data.options:
                 next_node = option_data.nextNode
                 
-                if isinstance(next_node , dict):
+                if isinstance(next_node, dict):
                     next_node = StoryNodeLLM.model_validate(next_node)
                 
-                child_node = cls._process_story_node(db , story_id , next_node , is_root=False) 
-                
+                child_node = cls._process_story_node(db, story_id, next_node, is_root=False) 
                 
                 option_list.append({
                     "text": option_data.text,
@@ -94,4 +94,3 @@ class StoryGenerator:
                
         db.flush() 
         return node
-                
