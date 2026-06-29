@@ -16,7 +16,7 @@ class Story(Base):
     
     
     #relationships between tables
-    node = relationship(arguments = "StoryNode", back_populates="story")
+    node = relationship("StoryNode", back_populates="story")
 
 class StoryNode(Base):
     __tablename__ = "story_nodes"
@@ -30,4 +30,4 @@ class StoryNode(Base):
     is_winning_ending = Column(Boolean, default=False)
     options = Column(JSON, nullable=True ,default=list)
     
-    story = relationship(arguments = "Story", back_populates="node")
+    story = relationship("Story", back_populates="node")

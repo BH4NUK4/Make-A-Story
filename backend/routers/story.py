@@ -4,14 +4,14 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from datetime import datetime
 
-from backend.db.database import get_db , SessionLocal
-from backend.models.story import Story , StoryNode
-from backend.models.job import StoryJob
-from backend.schemas.story import (
+from db.database import get_db , SessionLocal
+from models.story import Story , StoryNode
+from models.job import StoryJob
+from schemas.story import (
     CompleteStoryResponse , CompleteStoryNodeResponse , CreateStoryRequest 
 )
 
-from backend.schemas.job import StoryJobResponse
+from schemas.job import StoryJobResponse
 
 router = APIRouter(
     prefix="/stories",
@@ -37,7 +37,7 @@ def create_story(
     job_id = str(uuid.uuid4())
     
     job = StoryJob(
-        job_id=job,
+        job_id=job_id,
         session_id=session_id,
         theme=request.theme,
         status="pending",
@@ -46,6 +46,57 @@ def create_story(
     db.commit()
     
     
+    background_tasks.add_task(
+        generate_story_task,
+        job_id=job_id,
+        theme=request.theme,
+        session_id=session_id
+        )
+    
+    
+    
+    
+    
+    
+    
     return job
 
 
+def generate_story_task(job_id:str , theme:str , session_id:str):
+    db = SessionLocal()
+     
+    try :
+        job = db.query(StoryJob).filter(StoryJob.job_id == job_id).first()
+        if not job:
+            return
+        try:
+            job.status = "processing"
+            db.commit()
+            
+            story = {}
+            
+            job.story_id = 1
+            job.status = "completed"
+            job.completed_at = datetime.now()
+            db.commit()
+        except Exception as e:
+            job.status = "failed"
+            job.completed_at = datetime.now()
+            job.error_message = str(e)
+            db.commit()
+            
+    finally:
+        db.close() 
+        
+        
+@router.get(path="/{story_id}", response_model=CompleteStoryResponse)
+def get_story(story_id: int, db: Session = Depends(get_db)):
+    story = db.query(Story).filter(Story.id == story_id).first()
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    
+    #todo: parse story
+    return story 
+
+def build_complete_story_tree(db: Session , story:Story) -> CompleteStoryResponse:
+    pass
