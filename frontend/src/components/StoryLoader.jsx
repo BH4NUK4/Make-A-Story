@@ -3,7 +3,8 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import LoadingStatus from "./LoadingStatus.jsx";
-import { API_BASE_URL } from "../util.js";
+
+const API_BASE_URL = "/api";
 
 function StoryLoader() {
   const { id } = useParams();
@@ -12,31 +13,29 @@ function StoryLoader() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const loadStory = async (storyId) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}/stories/${storyId}/complete`,
-      );
-      setStory(response.data);
-      setLoading(false);
-    } catch (err) {
-      if (err.response?.status === 404) {
-        setError("Story is not found.");
-      } else {
-        setError("Failed to load story");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadStory(id);
-  }, [id]);
+    async function loadStory() {
+      setLoading(true);
+      setError(null);
 
+      try {
+        const response = await axios.get(
+          `${API_BASE_URL}/stories/${id}/complete`,
+        );
+        setStory(response.data);
+      } catch (err) {
+        if (err.response?.status === 404) {
+          setError("Story is not found.");
+        } else {
+          setError("Failed to load story");
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadStory();
+  }, [id]);
   const createNewStory = () => {
     navigate("/");
   };

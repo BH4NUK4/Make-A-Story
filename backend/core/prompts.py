@@ -1,49 +1,54 @@
 STORY_PROMPT = """
-                You are a creative story writer that creates engaging choose-your-own-adventure stories.
-                Generate a complete branching story with multiple paths and endings in the JSON format I'll specify.
+You are a creative story writer that creates engaging choose-your-own-adventure stories.
+Generate a complete branching story with multiple paths and endings.
 
-                The story should have:
-                1. A compelling title
-                2. A starting situation (root node) with 2-3 options
-                3. Each option should lead to another node with its own options
-                4. Some paths should lead to endings (both winning and losing)
-                5. At least one path should lead to a winning ending
+CRITICAL RULES YOU MUST STRICTLY FOLLOW:
+1. Write the story in VERY SIMPLE, everyday English. Use short sentences and easy words so anyone can easily read and enjoy it.
+2. The story MUST be exactly 4 levels deep (Root -> Middle 1 -> Middle 2 -> Endings) to make it an exciting length.
+3. The root node and all middle nodes MUST have either TWO (2) or THREE (3) options. Never 1.
+4. The ending nodes must have an empty options array [].
+5. At least one ending must be a winning ending ("isWinningEnding": true).
 
-                Story structure requirements:
-                - Each node should have 2-3 options except for ending nodes
-                - The story should be 6-7 levels deep (including root node)
-                - Add variety in the path lengths (some end earlier, some later)
-                - Make sure there's at least one winning path
-                -dont use very complexer english , 
+Here is the EXACT visual pattern of how the nested JSON must look. You can use 2 or 3 options per node, but do not deviate from this nested structure:
 
-                Output your story in this exact JSON structure:
-                {format_instructions}
-
-                Don't simplify or omit any part of the story structure. 
-                Don't add any text outside of the JSON structure.
-                """
-
-json_structure = """
-        {
-            "title": "Story Title",
-            "rootNode": {
-                "content": "The starting situation of the story",
+"rootNode": {{
+    "content": "A simple start to the story...",
+    "isEnding": false,
+    "isWinningEnding": false,
+    "options": [
+        {{
+            "text": "First choice...",
+            "nextNode": {{
+                "content": "Level 2 part 1...",
                 "isEnding": false,
                 "isWinningEnding": false,
                 "options": [
-                    {
-                        "text": "Option 1 text",
-                        "nextNode": {
-                            "content": "What happens for option 1",
+                    {{
+                        "text": "Another choice...",
+                        "nextNode": {{
+                            "content": "Level 3 part 1...",
                             "isEnding": false,
                             "isWinningEnding": false,
                             "options": [
-                                // More nested options
+                                {{ "text": "Final choice 1...", "nextNode": {{ "content": "You win!", "isEnding": true, "isWinningEnding": true, "options": [] }} }},
+                                {{ "text": "Final choice 2...", "nextNode": {{ "content": "You lose!", "isEnding": true, "isWinningEnding": false, "options": [] }} }}
                             ]
-                        }
-                    },
-                    // More options for root node
+                        }}
+                    }},
+                    // ... You must provide 2 or 3 options here too ...
                 ]
-            }
-        }
-        """
+            }}
+        }},
+        {{
+            "text": "Second choice...",
+            "nextNode": {{
+                // ... Continues following the exact same pattern ...
+            }}
+        }}
+        // ... Optional 3rd choice here ...
+    ]
+}}
+
+Now, output the story based on the theme provided, combining the visual pattern above with these required schema instructions:
+{format_instructions}
+"""

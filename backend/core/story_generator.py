@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified # <-- NEW IMPORT
 from core.config import Settings 
 
-# Removed: from langchain_openai import ChatOpenAI
-from langchain_google_genai import ChatGoogleGenerativeAI # Added this import
+from langchain_google_genai import ChatGoogleGenerativeAI 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 
@@ -13,14 +13,11 @@ from core.models import StoryLLMResponse, StoryNodeLLM
 class StoryGenerator:
     @classmethod
     def _get_llm(cls):
-        # We instantiate the Settings to grab our new API key
         settings = Settings()
-        
-        # Swapped ChatOpenAI for ChatGoogleGenerativeAI
         return ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash", # Using the fast, free tier model
+            model="gemini-2.5-flash",
             google_api_key=settings.GEMINI_API_KEY,
-            temperature=0.7 # A good temperature for creative story writing
+            temperature=0.9
         )
      
     @classmethod
@@ -45,7 +42,28 @@ class StoryGenerator:
         if hasattr(raw_response, "content"):
             response_text = raw_response.content
             
-        story_structure = story_parser.parse(response_text) # minor fix: use .parse()
+        # ==========================================
+        # CLEAN UP THE AI'S RESPONSE
+        # ==========================================
+        if isinstance(response_text, list):
+            response_text = response_text[0]
+            if isinstance(response_text, dict) and "text" in response_text:
+                response_text = response_text["text"]
+                
+        response_text = str(response_text).strip()
+        
+        if response_text.startswith("```json"):
+            response_text = response_text.replace("```json", "", 1)
+        elif response_text.startswith("```"):
+            response_text = response_text.replace("```", "", 1)
+            
+        if response_text.endswith("```"):
+            response_text = response_text.rsplit("```", 1)[0]
+            
+        response_text = response_text.strip()
+        # ==========================================
+            
+        story_structure = story_parser.parse(response_text) 
         
         story_db = Story(title=story_structure.title, session_id=session_id)
         db.add(story_db)
@@ -62,14 +80,13 @@ class StoryGenerator:
     
     @classmethod
     def _process_story_node(cls, db: Session, story_id: int, node_data: StoryNodeLLM, is_root: bool = False) -> StoryNode:
-        # This function recursively builds your story tree in the database!
         node = StoryNode(
             story_id=story_id,
             content=node_data.content if hasattr(node_data, "content") else node_data["content"],
             is_root=is_root,
             is_ending=node_data.isEnding if hasattr(node_data, "isEnding") else node_data["isEnding"],
             is_winning_ending=node_data.isWinningEnding if hasattr(node_data, "isWinningEnding") else node_data["isWinningEnding"],
-            options=[] # Note: I corrected the typo from `option=[]` to `options=[]` assuming it matches your DB model.
+            options=[] 
         )
         
         db.add(node)
@@ -89,8 +106,12 @@ class StoryGenerator:
                     "text": option_data.text,
                     "node_id": child_node.id
                 }) 
-                
-                node.options = option_list
+                 
+            # Assign the list to the node
+            node.options = option_list
+            
+            # THE FIX: Force SQLAlchemy to save the array!
+            flag_modified(node, "options")
                
         db.flush() 
         return node

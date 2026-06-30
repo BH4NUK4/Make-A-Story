@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import ThemeInput from "./ThemeInput.jsx";
@@ -13,6 +13,46 @@ function StoryGenerator() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // 1. Move fetchStory up and wrap in useCallback
+  const fetchStory = useCallback(
+    async (id) => {
+      try {
+        setLoading(false);
+        setJobStatus("completed");
+        navigate(`/story/${id}`);
+      } catch (e) {
+        setError(`Failed to load story: ${e.message}`);
+        setLoading(false);
+      }
+    },
+    [navigate],
+  );
+
+  // 2. Move pollJobStatus up and wrap in useCallback
+  const pollJobStatus = useCallback(
+    async (id) => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/jobs/${id}`);
+        const { status, story_id, error: jobError } = response.data;
+        setJobStatus(status);
+
+        if (status === "completed" && story_id) {
+          fetchStory(story_id);
+        } else if (status === "failed" || jobError) {
+          setError(jobError || "Failed to generate story");
+          setLoading(false);
+        }
+      } catch (e) {
+        if (e.response?.status !== 404) {
+          setError(`Failed to check story status: ${e.message}`);
+          setLoading(false);
+        }
+      }
+    },
+    [fetchStory],
+  ); // Add fetchStory to dependencies since it's used inside
+
+  // 3. Now useEffect can safely use pollJobStatus and include it in the deps array
   useEffect(() => {
     let pollInterval;
 
@@ -27,7 +67,7 @@ function StoryGenerator() {
         clearInterval(pollInterval);
       }
     };
-  }, [jobId, jobStatus]);
+  }, [jobId, jobStatus, pollJobStatus]); // pollJobStatus is now safely added here
 
   const generateStory = async (theme) => {
     setLoading(true);
@@ -46,37 +86,6 @@ function StoryGenerator() {
     } catch (e) {
       setLoading(false);
       setError(`Failed to generate story: ${e.message}`);
-    }
-  };
-
-  const pollJobStatus = async (id) => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/jobs/${id}`);
-      const { status, story_id, error: jobError } = response.data;
-      setJobStatus(status);
-
-      if (status === "completed" && story_id) {
-        fetchStory(story_id);
-      } else if (status === "failed" || jobError) {
-        setError(jobError || "Failed to generate story");
-        setLoading(false);
-      }
-    } catch (e) {
-      if (e.response?.status !== 404) {
-        setError(`Failed to check story status: ${e.message}`);
-        setLoading(false);
-      }
-    }
-  };
-
-  const fetchStory = async (id) => {
-    try {
-      setLoading(false);
-      setJobStatus("completed");
-      navigate(`/story/${id}`);
-    } catch (e) {
-      setError(`Failed to load story: ${e.message}`);
-      setLoading(false);
     }
   };
 

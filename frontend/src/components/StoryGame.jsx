@@ -16,16 +16,30 @@ function StoryGame({ story, onNewStory }) {
 
   useEffect(() => {
     if (currentNodeId && story && story.all_nodes) {
-      const node = story.all_nodes[currentNodeId];
-
-      setCurrentNode(node);
-      setIsEnding(node.is_ending);
-      setIsWinningEnding(node.is_winning_endig);
-
-      if (!node.is_ending && node.options && node.options.length > 0) {
-        setOptions(node.options);
+      // THE FIX: Smart search to find the exact node by its ID
+      let node;
+      if (Array.isArray(story.all_nodes)) {
+        // If it's a list, find the node where the ID matches
+        node = story.all_nodes.find((n) => n.id === currentNodeId);
       } else {
-        setOptions([]);
+        // If it's a dictionary, look it up directly
+        node = story.all_nodes[currentNodeId];
+      }
+
+      // Let's print the node to the console just to be safe!
+      console.log("CURRENT NODE DATA:", node);
+
+      if (node) {
+        setCurrentNode(node);
+        setIsEnding(node.is_ending);
+        setIsWinningEnding(node.is_winning_ending);
+
+        // Ensure options actually exist and have length before setting them
+        if (!node.is_ending && node.options && node.options.length > 0) {
+          setOptions(node.options);
+        } else {
+          setOptions([]);
+        }
       }
     }
   }, [currentNodeId, story]);
@@ -49,7 +63,8 @@ function StoryGame({ story, onNewStory }) {
       <div className="story-content">
         {currentNode && (
           <div className="story-node">
-            <p>{currentNode.content}</p>
+            {/* THE FIX: Check for lowercase 'c' OR uppercase 'C' */}
+            <p>{currentNode.content || currentNode.Content}</p>
 
             {isEnding ? (
               <div className="story-ending">
