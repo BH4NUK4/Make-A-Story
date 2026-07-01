@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import ThemeInput from "./ThemeInput.jsx";
 import LoadingStatus from "./LoadingStatus.jsx";
-import { API_BASE_URL } from "../util.js";
+const API_BASE_URL = "/api";
 
 function StoryGenerator() {
   const navigate = useNavigate();
@@ -50,13 +50,14 @@ function StoryGenerator() {
       }
     },
     [fetchStory],
-  ); // Add fetchStory to dependencies since it's used inside
+  );
 
-  // 3. Now useEffect can safely use pollJobStatus and include it in the deps array
+  // 3. Polling Effect
   useEffect(() => {
     let pollInterval;
 
-    if (jobId && jobStatus === "processing") {
+    // THE FIX: Start the timer if the job is "pending" OR "processing"
+    if (jobId && (jobStatus === "pending" || jobStatus === "processing")) {
       pollInterval = setInterval(() => {
         pollJobStatus(jobId);
       }, 5000);
@@ -67,7 +68,7 @@ function StoryGenerator() {
         clearInterval(pollInterval);
       }
     };
-  }, [jobId, jobStatus, pollJobStatus]); // pollJobStatus is now safely added here
+  }, [jobId, jobStatus, pollJobStatus]);
 
   const generateStory = async (theme) => {
     setLoading(true);

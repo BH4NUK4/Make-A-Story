@@ -5,7 +5,8 @@ function ThemeInput({ onSubmit }) {
   const [error, setError] = useState("");
 
   const handleSubmit = (e) => {
-    e.preventdefailt();
+    // THE FIX: Correct spelling with a capital 'D'
+    e.preventDefault();
 
     if (!theme.trim()) {
       setError("Please enter a theme name");
@@ -16,8 +17,8 @@ function ThemeInput({ onSubmit }) {
 
   return (
     <div className="theme-input-container">
-      <h2> Generate Your Advanture</h2>
-      <p> Enter a theme for your interactive story</p>
+      <h2>Generate Your Adventure</h2>
+      <p>Enter a theme for your interactive story</p>
 
       <form onSubmit={handleSubmit}>
         <div className="input-group">
