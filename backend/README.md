@@ -2,7 +2,7 @@
 title: Story Generator API
 emoji: 🚀
 colorFrom: blue
-colorTo: gaseous
+colorTo: purple
 sdk: docker
 pinned: false
 ---
