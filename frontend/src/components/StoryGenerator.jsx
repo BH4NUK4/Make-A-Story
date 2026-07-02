@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import ThemeInput from "./ThemeInput.jsx";
 import LoadingStatus from "./LoadingStatus.jsx";
-const API_BASE_URL = "/api";
+const API_BASE_URL = "https://bh4nuk4-story-generator-api.hf.space";
 
 function StoryGenerator() {
   const navigate = useNavigate();
