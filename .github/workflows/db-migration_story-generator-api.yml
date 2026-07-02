@@ -1,0 +1,66 @@
+name: Build and deploy Python app to Azure Web App - story-generator-api
+
+on:
+  push:
+    branches:
+      - db-migration
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Downgraded to 3.11 for maximum Azure compatibility
+      - name: Set up Python version
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Local test build inside the /backend folder
+      - name: Install dependencies
+        run: |
+          python -m venv antenv
+          source antenv/bin/activate
+          pip install -r requirements.txt
+        working-directory: ./backend  
+
+      # ONLY upload the backend folder, and ignore the antenv folder we just made
+      - name: Upload artifact for deployment jobs
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-app
+          path: .
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      id-token: write 
+      contents: read 
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: python-app
+      
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_355927D6A4144FF499956308CBAECE04 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_7C1E5E9519DA44B8AE28B7AECA579BC8 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_EE13111CEF474F1F9D4F3ADC4252E793 }}
+
+      - name: 'Deploy to Azure Web App'
+        uses: azure/webapps-deploy@v3
+        id: deploy-to-webapp
+        with:
+          app-name: 'story-generator-api'
+          slot-name: 'Production'
+          # Because we only uploaded the backend folder, we tell Azure to deploy the current directory (.)
+          package: './backend'
