@@ -18,5 +18,17 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git remote add space https://BH4NUK4:$HF_TOKEN@huggingface.co/spaces/BH4NUK4/story-generator-api
-          git push --force space main:main
+          # 1. Navigate into your backend folder 
+          # (CHANGE 'backend' TO THE EXACT NAME OF YOUR FOLDER)
+          cd backend 
+          
+          # 2. Create a temporary git repository just for this folder
+          git init
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git checkout -b main
+          git add .
+          git commit -m "Deploy backend to Hugging Face"
+          
+          # 3. Force push ONLY this folder to the Hugging Face main branch
+          git push --force https://BH4NUK4:$HF_TOKEN@huggingface.co/spaces/BH4NUK4/story-generator-api main:main
