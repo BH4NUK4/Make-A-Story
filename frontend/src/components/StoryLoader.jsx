@@ -4,7 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import LoadingStatus from "./LoadingStatus.jsx";
 
-const API_BASE_URL = "https://bh4nuk4-story-generator-api.hf.space";
+const API_BASE_URL = "https://bh4nuk4-story-generator-api.hf.space/api";
 
 function StoryLoader() {
   const { id } = useParams();
