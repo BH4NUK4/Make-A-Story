@@ -19,4 +19,4 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           git remote add space https://BH4NUK4:$HF_TOKEN@huggingface.co/spaces/BH4NUK4/story-generator-api
-          git push --force space master:main
+          git push --force space main:main
